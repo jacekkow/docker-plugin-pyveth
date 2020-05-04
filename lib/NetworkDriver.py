@@ -15,81 +15,10 @@ def genid(size=8, chars='0123456789abcdef'):
     return ''.join([random.choice(chars) for _ in range(size)])
 
 
-@app.route('/NetworkDriver.GetCapabilities', methods=['POST'])
-def GetCapabilities():
-    return {
-        'Scope': 'local',
-        'ConnectivityScope': 'global',
-    }
-
-
-@app.route('/NetworkDriver.CreateNetwork', methods=['POST'])
-def CreateNetwork():
-    network = NetworkCreateEntity(**flask.request.get_json(force=True))
-    try:
-        for option, value in network.Options['com.docker.network.generic'].items():
-            if option not in network.Options:
-                network.Options[option] = value
-    except KeyError:
-        pass
-    networks[network.NetworkID] = network
-    return {}
-
-
-@app.route('/NetworkDriver.DeleteNetwork', methods=['POST'])
-def DeleteNetwork():
-    network = NetworkDeleteEntity(**flask.request.get_json(force=True))
-    del networks[network.NetworkID]
-    return {}
-
-
-@app.route('/NetworkDriver.CreateEndpoint', methods=['POST'])
-def CreateEndpoint():
-    endpoint = EndpointCreateEntity(**flask.request.get_json(force=True))
-
-    endpoints['{}-{}'.format(endpoint.NetworkID, endpoint.EndpointID)] = endpoint
-    return {
-        'Interface': {
-        }
-    }
-
-
-@app.route('/NetworkDriver.EndpointOperInfo', methods=['POST'])
-def EndpointOperInfo():
-    endpoint = EndpointOperInfoEntity(**flask.request.get_json(force=True))
-    return {
-        'Value': {
-        }
-    }
-
-
-@app.route('/NetworkDriver.DeleteEndpoint', methods=['POST'])
-def DeleteEndpoint():
-    entity = EndpointDeleteEntity(**flask.request.get_json(force=True))
-    endpoint = endpoints['{}-{}'.format(entity.NetworkID, entity.EndpointID)]
-
-    try:
-        with pyroute2.IPRoute() as ip:
-            iface = ip.link_lookup(ifname=endpoint.Interface.Peer)[0]
-            if iface:
-                ip.link('del', index=iface)
-        del endpoint.Interface.Name
-        del endpoint.Interface.Peer
-    except AttributeError:
-        pass
-
-    del endpoints['{}-{}'.format(endpoint.NetworkID, endpoint.EndpointID)]
-    return {}
-
-
-@app.route('/NetworkDriver.Join', methods=['POST'])
-def Join():
-    join = JoinEntity(**flask.request.get_json(force=True))
-    network = networks[join.NetworkID]
-    endpoint = endpoints['{}-{}'.format(join.NetworkID, join.EndpointID)]
-
+def create_interface(endpoint, network) -> str:
     ifname0 = 'veth{}'.format(genid())
     ifname1 = 'veth{}'.format(genid())
+
     with pyroute2.IPRoute() as ip:
         ip.link('add', ifname=ifname0, peer=ifname1, kind='veth')
         idx = ip.link_lookup(ifname=ifname0)[0]
@@ -111,6 +40,76 @@ def Join():
             print(ip.link("set", index=idx, master=id_parent))
         endpoint.Interface.Peer = ifname1
 
+    return ifname0
+
+
+@app.route('/NetworkDriver.GetCapabilities', methods=['POST'])
+def GetCapabilities():
+    return {
+        'Scope': 'local',
+        'ConnectivityScope': 'global',
+    }
+
+
+@app.route('/NetworkDriver.CreateNetwork', methods=['POST'])
+def CreateNetwork():
+    network = NetworkCreateEntity(**flask.request.get_json(force=True))
+    try:
+        for option, value in network.Options['com.docker.network.generic'].items():
+            if option not in network.Options:
+                network.Options[option] = value
+    except KeyError:
+        pass
+    networks[network.NetworkID] = network
+    networks_sync()
+    return {}
+
+
+@app.route('/NetworkDriver.DeleteNetwork', methods=['POST'])
+def DeleteNetwork():
+    network = NetworkDeleteEntity(**flask.request.get_json(force=True))
+    if network.NetworkID in networks:
+        del networks[network.NetworkID]
+        networks_sync()
+    return {}
+
+
+@app.route('/NetworkDriver.CreateEndpoint', methods=['POST'])
+def CreateEndpoint():
+    endpoint = EndpointCreateEntity(**flask.request.get_json(force=True))
+    endpoints['{}-{}'.format(endpoint.NetworkID, endpoint.EndpointID)] = endpoint
+    return {
+        'Interface': {
+        }
+    }
+
+
+@app.route('/NetworkDriver.EndpointOperInfo', methods=['POST'])
+def EndpointOperInfo():
+    endpoint = EndpointOperInfoEntity(**flask.request.get_json(force=True))
+    return {
+        'Value': {
+        }
+    }
+
+
+@app.route('/NetworkDriver.DeleteEndpoint', methods=['POST'])
+def DeleteEndpoint():
+    entity = EndpointDeleteEntity(**flask.request.get_json(force=True))
+    endpoint_id = '{}-{}'.format(entity.NetworkID, entity.EndpointID)
+    if endpoint_id in endpoints:
+        del endpoints['{}-{}'.format(entity.NetworkID, entity.EndpointID)]
+    return {}
+
+
+@app.route('/NetworkDriver.Join', methods=['POST'])
+def Join():
+    join = JoinEntity(**flask.request.get_json(force=True))
+    network = networks[join.NetworkID]
+    endpoint = endpoints['{}-{}'.format(join.NetworkID, join.EndpointID)]
+
+    interface = create_interface(endpoint, network)
+
     gw4 = None
     for net4 in network.IPv4:
         try:
@@ -128,7 +127,7 @@ def Join():
 
     result = {
         'InterfaceName': {
-            'SrcName': ifname0,
+            'SrcName': interface,
             'DstPrefix': 'eth',
         },
     }
@@ -142,18 +141,6 @@ def Join():
 @app.route('/NetworkDriver.Leave', methods=['POST'])
 def Leave():
     leave = LeaveEntity(**flask.request.get_json(force=True))
-    endpoint = endpoints['{}-{}'.format(leave.NetworkID, leave.EndpointID)]
-
-    try:
-        with pyroute2.IPRoute() as ip:
-            iface = ip.link_lookup(ifname=endpoint.Interface.Peer)[0]
-            if iface:
-                ip.link('del', index=iface)
-        del endpoint.Interface.Name
-        del endpoint.Interface.Peer
-    except AttributeError:
-        pass
-
     return {}
 
 
