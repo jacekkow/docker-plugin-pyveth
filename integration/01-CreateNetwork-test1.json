@@ -1,0 +1,24 @@
+{
+	"NetworkID": "test1",
+	"IPv4Data" : [
+		{
+			"AddressSpace": "test-ipv4",
+			"Pool": "192.168.0.0/24",
+			"Gateway": "192.168.0.254/24",
+			"AuxAddresses": {
+			}
+		}
+	],
+	"IPv6Data" : [
+		{
+			"AddressSpace": "test-ipv6",
+			"Pool": "2001:db8::/32",
+			"Gateway": "2001:db8:ffff:ffff:1:1:1:1/32",
+			"AuxAddresses": {
+			}
+		}
+	],
+	"Options": {
+		"parent": "docker0"
+	}
+}

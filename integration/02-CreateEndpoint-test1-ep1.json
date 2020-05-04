@@ -1,0 +1,11 @@
+{
+	"NetworkID": "test1",
+	"EndpointID": "ep1",
+	"Options": {
+	},
+	"Interface": {
+		"Address": "192.168.0.1/24",
+		"AddressIPv6": "2001:db8::1/32",
+		"MacAddress": "a0:a1:a2:a3:a4:a5"
+	}
+}
