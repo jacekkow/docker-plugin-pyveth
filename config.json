@@ -2,7 +2,7 @@
 	"description": "pyveth - veth network driver in Python",
 	"documentation": "https://github.com/jacekkow/docker-plugin-pyveth",
 	"workdir": "/usr/src/app",
-	"entrypoint": ["./run.py"],
+	"entrypoint": ["./venv/bin/python", "run.py"],
 	"env": [
 		{
 			"name": "ENVIRONMENT",
