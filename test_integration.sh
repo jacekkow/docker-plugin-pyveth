@@ -42,7 +42,6 @@ docker network rm test1
 
 
 docker network create \
-  --internal \
   --driver "${PLUGIN}" \
   --ipam-driver jacekkow/pyipam:latest \
   --ipv6 \
