@@ -9,6 +9,8 @@ PLUGIN="${NAME}:${VERSION}"
 
 docker plugin install jacekkow/pyipam:latest || true
 
+docker plugin install jacekkow/pyipam:latest || true
+
 docker network create \
   --internal \
   --driver "${PLUGIN}" \
