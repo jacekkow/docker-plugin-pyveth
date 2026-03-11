@@ -40,7 +40,16 @@ def create_interface(endpoint, network) -> str:
             print(ip.link("set", index=idx, master=id_parent))
         endpoint.Interface.Peer = ifname1
 
-    return ifname0
+    return ifname0, ifname1
+
+
+def delete_interface(interface):
+    try:
+        with pyroute2.IPRoute() as ip:
+            idx = ip.link_lookup(ifname=interface)[0]
+            ip.link("delete", index=idx)
+    except:
+        pass
 
 
 @app.route('/NetworkDriver.GetCapabilities', methods=['POST'])
@@ -108,7 +117,10 @@ def Join():
     network = networks[join.NetworkID]
     endpoint = endpoints['{}-{}'.format(join.NetworkID, join.EndpointID)]
 
-    interface = create_interface(endpoint, network)
+    interface, interface_external = create_interface(endpoint, network)
+
+    endpoint.internal_interface_name = interface
+    endpoint.external_interface_name = interface_external
 
     gw4 = None
     for net4 in network.IPv4:
@@ -141,6 +153,9 @@ def Join():
 @app.route('/NetworkDriver.Leave', methods=['POST'])
 def Leave():
     leave = LeaveEntity(**flask.request.get_json(force=True))
+    endpoint = endpoints.get('{}-{}'.format(leave.NetworkID, leave.EndpointID), None)
+    if endpoint is not None and endpoint.external_interface_name:
+        delete_interface(endpoint.external_interface_name)
     return {}
 
 
