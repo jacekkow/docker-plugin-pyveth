@@ -31,14 +31,31 @@ By default it will simply create a pair of veth interfaces for each container.
 One will be pushed inside the container and another will remain on host
 (without any IP assigned).
 
-Plugin accepts optional `parent` parameter, which is a name of bridge
-interface that the second interface should be added to:
+## Options
+
+To use options, add `--opt option=value` as an argument of `docker network create`:
 
 ```bash
 docker network create --driver jacekkow/pyveth:latest --opt parent=br0 new-network
 ```
 
-This way host interface will be automatically attached to the specified bridge.
+Available options:
+
+`parent=brname`
+
+Automatically attach host interface to the bridge interface `brname`.
+
+`nogw=1`
+
+Disable assignment of gateway IP.
+
+`nogw4=1`
+
+Disable assignment of IPv4 gateway IP.
+
+`nogw6=1`
+
+Disable assignment of IPv6 gateway IP.
 
 ## Manual packaging
 

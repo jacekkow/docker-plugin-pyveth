@@ -57,6 +57,21 @@ def GetCapabilities():
     return {
         'Scope': 'local',
         'ConnectivityScope': 'global',
+        'GwAllocChecker': True,
+    }
+
+
+@app.route('/NetworkDriver.GwAllocCheck', methods=['POST'])
+def GwAllocCheck():
+    request = flask.request.get_json(force=True)
+    skip_ipv4 = skip_ipv6 = request.get('Options', {}).get('com.docker.network.generic', {}).get('nogw') == '1'
+    if request.get('Options', {}).get('com.docker.network.generic', {}).get('nogw4') == '1':
+        skip_ipv4 = true
+    if request.get('Options', {}).get('com.docker.network.generic', {}).get('nogw6') == '1':
+        skip_ipv6 = true
+    return {
+        'SkipIPv4': skip_ipv4,
+        'SkipIPv6': skip_ipv6,
     }
 
 

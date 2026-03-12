@@ -12,6 +12,10 @@ docker network rm test2 || true
 
 docker plugin install jacekkow/pyipam:latest || true
 
+
+##########################
+# Test address assignment
+
 docker network create \
   --internal \
   --driver "${PLUGIN}" \
@@ -56,6 +60,9 @@ fi
 docker network rm test1
 
 
+######################
+# Test routing config
+
 docker network create \
   --driver "${PLUGIN}" \
   --ipam-driver jacekkow/pyipam:latest \
@@ -81,6 +88,111 @@ ROUTES=$(docker run --rm --network test2 \
 )
 if ! echo "${ROUTES}" | grep 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff; then
 	echo "ERROR: invalid IPv6 route"
+	exit 1
+fi
+
+docker network rm test2
+
+
+##############
+# Test nogw=1
+
+docker network create \
+  --driver "${PLUGIN}" \
+  --opt nogw=1 \
+  --ipam-driver jacekkow/pyipam:latest \
+  --ipv6 \
+  --subnet 192.168.255.0/24 \
+  --gateway 192.168.255.254 \
+  --subnet 2001:db8::/32 \
+  --gateway 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff \
+  test2
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip route show
+)
+if echo "${ROUTES}" | grep 192.168.255.254; then
+	echo "ERROR: IPv4 route assigned with nogw=1"
+	exit 1
+fi
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip -6 route show
+)
+if echo "${ROUTES}" | grep 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff; then
+	echo "ERROR: IPv6 route assigned with nogw=1"
+	exit 1
+fi
+
+docker network rm test2
+
+
+###############
+# Test nogw4=1
+
+docker network create \
+  --driver "${PLUGIN}" \
+  --opt nogw4=1 \
+  --ipam-driver jacekkow/pyipam:latest \
+  --ipv6 \
+  --subnet 192.168.255.0/24 \
+  --gateway 192.168.255.254 \
+  --subnet 2001:db8::/32 \
+  --gateway 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff \
+  test2
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip route show
+)
+if echo "${ROUTES}" | grep 192.168.255.254; then
+	echo "ERROR: IPv4 route assigned with nogw4=1"
+	exit 1
+fi
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip -6 route show
+)
+if ! echo "${ROUTES}" | grep 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff; then
+	echo "ERROR: IPv6 route not assigned with nogw4=1"
+	exit 1
+fi
+
+docker network rm test2
+
+
+################
+# Test nogw6=1
+
+docker network create \
+  --driver "${PLUGIN}" \
+  --opt nogw6=1 \
+  --ipam-driver jacekkow/pyipam:latest \
+  --ipv6 \
+  --subnet 192.168.255.0/24 \
+  --gateway 192.168.255.254 \
+  --subnet 2001:db8::/32 \
+  --gateway 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff \
+  test2
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip route show
+)
+if ! echo "${ROUTES}" | grep 192.168.255.254; then
+	echo "ERROR: IPv4 route not assigned with nogw6=1"
+	exit 1
+fi
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip -6 route show
+)
+if echo "${ROUTES}" | grep 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff; then
+	echo "ERROR: IPv6 route assigned with nogw6=1"
 	exit 1
 fi
 
