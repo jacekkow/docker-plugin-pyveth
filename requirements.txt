@@ -1,4 +1,4 @@
-docker-plugin-api>=0.3
+docker-plugin-api>=0.4
 Flask
 pyroute2
 waitress
