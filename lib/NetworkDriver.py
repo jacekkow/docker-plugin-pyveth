@@ -37,7 +37,7 @@ def create_interface(endpoint, network) -> str:
         ip.link('set', index=idx, state='up')
         if 'parent' in network.Options:
             id_parent = ip.link_lookup(ifname=network.Options['parent'])[0]
-            print(ip.link("set", index=idx, master=id_parent))
+            ip.link("set", index=idx, master=id_parent)
         endpoint.Interface.Peer = ifname1
 
     return ifname0, ifname1
@@ -157,11 +157,26 @@ def Join():
             'SrcName': interface,
             'DstPrefix': 'eth',
         },
+        'StaticRoutes': [],
     }
     if gw4 is not None:
         result['Gateway'] = gw4.ip.compressed
     if gw6 is not None:
         result['GatewayIPv6'] = gw6.ip.compressed
+    gw4 = endpoint.Options.get("gw4", None)
+    if gw4 is not None:
+        result['StaticRoutes'].append({
+            'Destination': gw4 + '/32',
+            'RouteType': 1,
+        })
+        result['Gateway'] = gw4
+    gw6 = endpoint.Options.get("gw6", None)
+    if gw6 is not None:
+        result['StaticRoutes'].append({
+            'Destination': gw6 + '/128',
+            'RouteType': 1,
+        })
+        result['GatewayIPv6'] = gw6
     return result
 
 
