@@ -57,6 +57,20 @@ Disable assignment of IPv4 gateway IP.
 
 Disable assignment of IPv6 gateway IP.
 
+`gw4=IP`
+
+`gw6=IP`
+
+Forces assignment of a specified gateway (only if one is not provided by the IPAM module)
+when creating the interface. Useful for [pyipam](https://github.com/jacekkow/docker-plugin-pyipam)
+with `ptp=1` option and `nogw=1`/`nogw4=1`/`nogw6=1` here.
+
+Using these would add routes like:
+```
+default via IP dev eth0
+IP dev eth0 scope link
+```
+
 ## Container creation options
 
 To use these options add `--network name=network_name,driver-opt=option=value,driver-opt=option=value`
@@ -72,15 +86,7 @@ Available options:
 
 `gw6=IP`
 
-Forces assignment of a specified gateway (if one is not provided by the IPAM)
-when creating the interface. Useful for [pyipam](https://github.com/jacekkow/docker-plugin-pyipam)
-with "ptp=1,nogw=1" options.
-
-Using these would add routes:
-```
-default via IP dev eth0
-IP dev eth0 scope link
-```
+Overrides network-level gw4/gw6 options.
 
 ## Manual packaging
 

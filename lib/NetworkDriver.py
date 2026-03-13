@@ -163,14 +163,14 @@ def Join():
         result['Gateway'] = gw4.ip.compressed
     if gw6 is not None:
         result['GatewayIPv6'] = gw6.ip.compressed
-    gw4 = endpoint.Options.get("gw4", None)
+    gw4 = endpoint.Options.get("gw4", network.Options.get("gw4", None))
     if gw4 is not None:
         result['StaticRoutes'].append({
             'Destination': gw4 + '/32',
             'RouteType': 1,
         })
         result['Gateway'] = gw4
-    gw6 = endpoint.Options.get("gw6", None)
+    gw6 = endpoint.Options.get("gw6", network.Options.get("gw6", None))
     if gw6 is not None:
         result['StaticRoutes'].append({
             'Destination': gw6 + '/128',

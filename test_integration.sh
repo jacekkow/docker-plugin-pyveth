@@ -193,3 +193,61 @@ if echo "${ROUTES}" | grep 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff; then
 fi
 
 docker network rm test2
+
+
+###############
+# Test gw4/gw6
+
+docker network create \
+  --internal \
+  --driver "${PLUGIN}" \
+  --opt nogw=1 \
+  --opt gw4=192.168.254.1 \
+  --ipam-driver jacekkow/pyipam:latest \
+  --ipam-opt ptp=1 \
+  --ipv6 \
+  --subnet 192.168.255.0/24 \
+  --subnet 2001:db8::/32 \
+  test2
+
+ADDRESSES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip addr show
+)
+if ! echo "${ADDRESSES}" | grep 192.168.255.0/32; then
+	echo "ERROR: invalid PtP address assigned"
+	exit 1
+fi
+if ! echo "${ADDRESSES}" | grep 2001:db8::/128; then
+	echo "ERROR: invalid PtP address assigned"
+	exit 1
+fi
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip route show
+)
+if ! echo "${ROUTES}" | grep "via 192.168.254.1"; then
+	echo "ERROR: IPv4 route not assigned with gw4=..."
+	exit 1
+fi
+
+ROUTES=$(docker run --rm --network test2 \
+  alpine \
+  /sbin/ip -6 route show
+)
+if echo "${ROUTES}" | grep default; then
+	echo "ERROR: IPv6 route assigned with nogw=1"
+	exit 1
+fi
+
+ROUTES=$(docker run --rm --network name=test2,driver-opt=gw6=fe80::1 \
+  alpine \
+  /sbin/ip -6 route show
+)
+if ! echo "${ROUTES}" | grep "via fe80::1"; then
+	echo "ERROR: IPv6 route not assigned with per-container gw6=..."
+	exit 1
+fi
+
+docker network rm test2
