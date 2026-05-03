@@ -15,7 +15,7 @@ def genid(size=8, chars='0123456789abcdef'):
     return ''.join([random.choice(chars) for _ in range(size)])
 
 
-def create_interface(endpoint, network) -> str:
+def create_interface(endpoint, network) -> tuple[str, str]:
     ifname0 = 'veth{}'.format(genid())
     ifname1 = 'veth{}'.format(genid())
 
