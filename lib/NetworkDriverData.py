@@ -13,3 +13,6 @@ def networks_sync():
 
 
 endpoints: Dict[str, EndpointCreateEntity] = {}
+
+
+__all__ = ['endpoints', 'networks', 'networks_sync']
