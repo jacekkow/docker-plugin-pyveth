@@ -23,7 +23,7 @@ jobs:
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare and push Docker plugin
@@ -42,11 +42,11 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v4
         with:
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Prepare and push Docker plugin
         run: |
-          export NAME="${{ github.actor }}/pyveth"
+          export NAME="${{ github.repository_owner }}/pyveth"
           export VERSIONS="latest ${GITHUB_REF/refs\/tags\//}"
           ./package.sh
